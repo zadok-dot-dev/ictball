@@ -1,9 +1,15 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import MapView from "@/components/MapView";
-import type { Venue } from "@/lib/types";
+import AuthWidget from "@/components/AuthWidget";
+import type { Profile, Venue } from "@/lib/types";
 
 export default async function Home() {
-  const { data: venues, error } = await supabase.from("venues").select("*");
+  const supabase = await createClient();
+
+  const [{ data: venues, error }, { data: userData }] = await Promise.all([
+    supabase.from("venues").select("*"),
+    supabase.auth.getUser(),
+  ]);
 
   if (error) {
     return (
@@ -13,8 +19,20 @@ export default async function Home() {
     );
   }
 
+  const user = userData.user;
+  let profile: Profile | null = null;
+  if (user) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+    profile = data;
+  }
+
   return (
-    <div className="h-screen w-full">
+    <div className="relative h-screen w-full">
+      <AuthWidget user={user} initialProfile={profile} />
       <MapView venues={(venues ?? []) as Venue[]} />
     </div>
   );

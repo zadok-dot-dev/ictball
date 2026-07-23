@@ -8,3 +8,11 @@ export type Venue = {
   amenities: string[];
   created_at: string;
 };
+
+export type Profile = {
+  id: string;
+  nickname: string | null;
+  avatar: string | null;
+  onboarded: boolean;
+  created_at: string;
+};
