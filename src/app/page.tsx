@@ -5,11 +5,18 @@ import type { Profile, Venue } from "@/lib/types";
 
 export default async function Home() {
   const supabase = await createClient();
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
 
-  const [{ data: venues, error }, { data: userData }] = await Promise.all([
-    supabase.from("venues").select("*"),
-    supabase.auth.getUser(),
-  ]);
+  const [{ data: venues, error }, { data: userData }, { data: checkins }] =
+    await Promise.all([
+      supabase.from("venues").select("*"),
+      supabase.auth.getUser(),
+      supabase
+        .from("checkins")
+        .select("venue_id, created_at")
+        .gte("created_at", twoHoursAgo)
+        .order("created_at", { ascending: false }),
+    ]);
 
   if (error) {
     return (
@@ -30,10 +37,21 @@ export default async function Home() {
     profile = data;
   }
 
+  const lastCheckins: Record<string, string> = {};
+  for (const c of checkins ?? []) {
+    if (!lastCheckins[c.venue_id]) {
+      lastCheckins[c.venue_id] = c.created_at;
+    }
+  }
+
   return (
     <div className="relative h-screen w-full">
       <AuthWidget user={user} initialProfile={profile} />
-      <MapView venues={(venues ?? []) as Venue[]} />
+      <MapView
+        venues={(venues ?? []) as Venue[]}
+        initialLastCheckins={lastCheckins}
+        user={user}
+      />
     </div>
   );
 }
