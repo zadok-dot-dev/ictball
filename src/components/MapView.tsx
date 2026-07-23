@@ -4,25 +4,38 @@ import { useState } from "react";
 import Map, { Marker, Popup } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { User } from "@supabase/supabase-js";
-import type { Venue } from "@/lib/types";
+import type { PlannedVisit, Venue } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { venueStatusLabel } from "@/lib/status";
+import PlanPicker from "@/components/PlanPicker";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 export default function MapView({
   venues,
   initialLastCheckins,
+  initialPlannedVisits,
   user,
 }: {
   venues: Venue[];
   initialLastCheckins: Record<string, string>;
+  initialPlannedVisits: PlannedVisit[];
   user: User | null;
 }) {
   const [selected, setSelected] = useState<Venue | null>(null);
   const [lastCheckins, setLastCheckins] = useState(initialLastCheckins);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [plannedVisits, setPlannedVisits] = useState(initialPlannedVisits);
   const supabase = createClient();
+
+  function handlePlan(visit: PlannedVisit) {
+    setPlannedVisits((prev) => [
+      ...prev.filter(
+        (v) => !(v.user_id === visit.user_id && v.venue_id === visit.venue_id),
+      ),
+      visit,
+    ]);
+  }
 
   async function handleCheckIn(venueId: string) {
     if (!user) {
@@ -99,6 +112,13 @@ export default function MapView({
             >
               {checkingIn ? "Checking in..." : "I'm here now"}
             </button>
+
+            <PlanPicker
+              venueId={selected.id}
+              plannedVisits={plannedVisits}
+              user={user}
+              onPlan={handlePlan}
+            />
           </div>
         </Popup>
       )}

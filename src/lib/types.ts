@@ -23,3 +23,10 @@ export type Checkin = {
   venue_id: string;
   created_at: string;
 };
+
+export type PlannedVisit = {
+  id: string;
+  user_id: string;
+  venue_id: string;
+  target_time: string;
+};
